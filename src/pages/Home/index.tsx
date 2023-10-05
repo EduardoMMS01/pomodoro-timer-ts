@@ -3,12 +3,13 @@ import { useForm } from "react-hook-form"
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as zod from 'zod'
 import { differenceInSeconds } from "date-fns"
-import { Play } from "phosphor-react"
+import { HandPalm, Play } from "phosphor-react"
 import { 
     CountDownContainer, 
     FormContainer, HomeContainer, 
     TwoPointsContainer, 
-    CountDownButton, 
+    StartCountDownButton, 
+    StopCountDownButton,
     TextInput, 
     NumberInput 
 } from "./styles"
@@ -30,6 +31,7 @@ interface Cycle {
     task: string
     minutesAmount: number
     startDate: Date
+    insterruptedDate?: Date
 }
 
 export function Home () {
@@ -60,6 +62,18 @@ export function Home () {
         
         reset()
     }
+
+    function handleInterruptCycle () {
+        setCycles(cycles.map(item => {
+            if (item.id === activeCycleId) {
+                return {...item, insterruptedDate: new Date()}
+            } else {
+                return item
+            }
+        }))
+
+        setActiveCycleId(null)
+    }
     
     const activeCycle = cycles.find(item => item.id === activeCycleId)
     
@@ -87,7 +101,7 @@ export function Home () {
 
     useEffect(() => {
         if (activeCycle) {
-            document.title = `${minutes}:${seconds} - ${activeCycle.task} `
+            document.title = `${minutes}:${seconds} (${activeCycle.task})`
         }
     }, [activeCycle, minutes, seconds])
 
@@ -100,7 +114,10 @@ export function Home () {
                 <FormContainer>
                     <label htmlFor="task">Vou trabalhar em</label>
                     <TextInput id="task" 
-                        list="task-suggestions" 
+                        list="task-suggestions"
+                        // !! Converte para boolean. Se tiver algum 
+                        // valor dentro será true, senão false.
+                        disabled={!!activeCycle}
                         placeholder="Dê um nome para seu projeto"
                         {...register('task')}
                     />
@@ -115,6 +132,7 @@ export function Home () {
                     <label htmlFor="minutesAmount">durante</label>
                     <NumberInput id="minutesAmount" 
                         type="number" 
+                        disabled={!!activeCycle}
                         placeholder="00"
                         min={5}
                         max={60}
@@ -134,10 +152,20 @@ export function Home () {
                     <span>{seconds[1]}</span>
                 </CountDownContainer>
 
-                <CountDownButton disabled={isSubmitDisabled} type="submit">
-                    <Play size={24} />
-                    Começar
-                </CountDownButton>
+                {
+                    activeCycle ? (
+                        <StopCountDownButton onClick={handleInterruptCycle} type="button">
+                            <HandPalm size={24} />
+                            Interromper
+                        </StopCountDownButton>
+                    ) : (
+                        <StartCountDownButton disabled={isSubmitDisabled} type="submit">
+                            <Play size={24} />
+                            Começar
+                        </StartCountDownButton>
+                    )
+                }
+                
             </form>
         </HomeContainer>
     )
