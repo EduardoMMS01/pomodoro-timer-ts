@@ -31,7 +31,8 @@ interface Cycle {
     task: string
     minutesAmount: number
     startDate: Date
-    insterruptedDate?: Date
+    interruptedDate?: Date
+    finishedDate?: Date
 }
 
 export function Home () {
@@ -64,34 +65,56 @@ export function Home () {
     }
 
     function handleInterruptCycle () {
-        setCycles(cycles.map(item => {
-            if (item.id === activeCycleId) {
-                return {...item, insterruptedDate: new Date()}
-            } else {
-                return item
-            }
-        }))
+        setCycles((state) => 
+            state.map(item => {
+                if (item.id === activeCycleId) {
+                    return {...item, interruptedDate: new Date()}
+                } else {
+                    return item
+                }
+            })
+        )
+
+        document.title = 'Pomodoro Timer'
 
         setActiveCycleId(null)
     }
     
     const activeCycle = cycles.find(item => item.id === activeCycleId)
+    const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0
     
     useEffect(() => {
         let interval: ReturnType<typeof setInterval>
 
         if (activeCycle) {
             interval = setInterval(() => {
-                setAmoutSecondsPassed(differenceInSeconds(new Date(), activeCycle.startDate))
+                const secondsDifference = differenceInSeconds(new Date(), activeCycle.startDate)
+                
+                if (secondsDifference >= totalSeconds) {
+                    setCycles((state) => 
+                        state.map(item => {
+                            if (item.id === activeCycleId) {
+                                return {...item, finishedDate: new Date()}
+                            } else {
+                                return item
+                            }
+                        })
+                    )
+
+                    setAmoutSecondsPassed(totalSeconds)
+                    clearInterval(interval)
+                    
+                } else {
+                    setAmoutSecondsPassed(secondsDifference)
+                }
             }, 1000)
         }
 
         return () => {
             clearInterval(interval)
         }
-    }, [activeCycle])
+    }, [activeCycle, totalSeconds])
 
-    const totalSeconds = activeCycle ? activeCycle.minutesAmount * 60 : 0
     const currentSeconds = activeCycle ? totalSeconds - amountSecondsPassed : 0
     const minutesAmount = Math.floor(currentSeconds / 60)
     const secondsAmount = currentSeconds % 60
